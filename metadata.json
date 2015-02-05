@@ -1,0 +1,6 @@
+{
+  "uuid": "gnomato@diegorubin.com",
+  "name": "Gnomato",
+  "description": "Show gnomato status",
+  "icon": "/usr/share/gnomato/tomato.png"
+}
