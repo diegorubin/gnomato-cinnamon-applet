@@ -3,8 +3,25 @@ const Applet = imports.ui.applet;
 const GLib = imports.gi.GLib;
 const Mainloop = imports.mainloop;
 const Gettext = imports.gettext.domain('cinnamon-applets');
+const Gio = imports.gi.Gio;
 const _ = Gettext.gettext;
- 
+
+const gnomato_interface = '<node> \
+    <interface name="com.diegorubin.Gnomato"> \
+      <method name="GetRemainer"> \
+        <arg type="s" name="iso8601" direction="out"/> \
+      </method> \
+      <method name="GetCurrentTask"> \
+        <arg type="s" name="iso8601" direction="out"/> \
+      </method> \
+      <method name="GetCycle"> \
+        <arg type="s" name="iso8601" direction="out"/> \
+      </method> \
+    </interface> \
+  </node> ';
+
+const GnomatoProxy = Gio.DBusProxy.makeProxyWrapper(gnomato_interface); 
+
 function GnomatoApplet(orientation) {
     this._init(orientation);
 }
@@ -29,17 +46,14 @@ GnomatoApplet.prototype = {
  
     _timeout: function(event) {
       try {
-          let output = {};
-          let remainer = GLib.spawn_sync(null, ["gnomato","GetRemainer"], null, GLib.SpawnFlags.SEARCH_PATH,null,null,output);
-          let task = GLib.spawn_sync(null, ["gnomato","GetCurrentTask"], null, GLib.SpawnFlags.SEARCH_PATH,null,null,output);
-          remainer = "" + remainer[1];
-          task = "" + task[1];
-          this.set_applet_label(remainer.substring(0, remainer.length - 1) + " - " + task.substring(0, task.length - 1));
-          Mainloop.timeout_add(1000, Lang.bind(this, this._timeout));
+          let gnomato = new GnomatoProxy(Gio.DBus.session, "com.diegorubin.Gnomato", "/com/diegorubin/Gnomato");
+          let remainer = gnomato.GetRemainerSync();
+          let task = gnomato.GetCurrentTaskSync();
+          this.set_applet_label('' + remainer + ' ' + task);
       }
       catch (e) {
-          global.logError(e);
       }
+      Mainloop.timeout_add(1000, Lang.bind(this, this._timeout));
 
     }
 };
